@@ -1,0 +1,23 @@
+# API kulcsok – SOHA ne kerüljön GitHubra!
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+
+# Bot adatfájlok
+trades.db
+simulation.db
+backtest.db
+*.pkl
+*.json
+bot.log
+sim_config.json
+portfolio.json
+feature_importance.json
+sentiment_log.json
+guard_log.json
+circuit_breaker.json
+KILL_SWITCH

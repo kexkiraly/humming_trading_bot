@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trading Bot Dashboard</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap');
+
+    :root {
+      --bg:       #0a0e1a;
+      --panel:    #0f1628;
+      --border:   #1e2d4a;
+      --green:    #00ff88;
+      --red:      #ff3355;
+      --blue:     #00aaff;
+      --yellow:   #ffd700;
+      --text:     #c8d8f0;
+      --dim:      #4a6080;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    /* Háttér rács animáció */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,170,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,170,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrapper { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 22px;
+      color: var(--blue);
+      letter-spacing: 2px;
+    }
+
+    .logo span { color: var(--green); }
+
+    .status-badge {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+      padding: 6px 14px;
+      border-radius: 4px;
+      border: 1px solid var(--green);
+      color: var(--green);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.5; }
+    }
+
+    /* Stat kártyák */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--blue);
+    }
+
+    .card.green::before { background: var(--green); }
+    .card.red::before   { background: var(--red); }
+    .card.yellow::before { background: var(--yellow); }
+
+    .card-label {
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--dim);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .card-value {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 26px;
+      color: var(--text);
+    }
+
+    .card-value.positive { color: var(--green); }
+    .card-value.negative { color: var(--red); }
+
+    /* Két oszlopos elrendezés */
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 700px) { .grid2 { grid-template-columns: 1fr; } }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    .panel-title {
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--dim);
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Indikátor sorok */
+    .indicator-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 15px;
+    }
+
+    .indicator-row:last-child { border-bottom: none; }
+    .ind-label { color: var(--dim); }
+    .ind-value { font-family: 'Share Tech Mono', monospace; }
+
+    /* Szavazás sáv */
+    .vote-bar-container { margin-top: 8px; }
+
+    .vote-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+
+    .vote-bar {
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      display: flex;
+    }
+
+    .vote-buy  { background: var(--green); transition: width 0.5s; }
+    .vote-sell { background: var(--red);   transition: width 0.5s; }
+
+    /* Megbízások tábla */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th {
+      text-align: left;
+      padding: 8px 12px;
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: var(--dim);
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    .buy-tag  { color: var(--green); }
+    .sell-tag { color: var(--red); }
+
+    .profit-pos { color: var(--green); }
+    .profit-neg { color: var(--red); }
+    .profit-na  { color: var(--dim); }
+
+    .refresh-note {
+      text-align: center;
+      font-size: 12px;
+      color: var(--dim);
+      margin-top: 20px;
+      font-family: 'Share Tech Mono', monospace;
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <header>
+    <div class="logo">HUMMING<span>BOT</span> // DASHBOARD</div>
+    <div class="status-badge" id="statusBadge">● BETÖLTÉS...</div>
+  </header>
+
+  <!-- Stat kártyák -->
+  <div class="cards">
+    <div class="card">
+      <div class="card-label">BTC / USDT Ár</div>
+      <div class="card-value" id="price">—</div>
+    </div>
+    <div class="card green">
+      <div class="card-label">Win Rate</div>
+      <div class="card-value" id="winRate">—</div>
+    </div>
+    <div class="card yellow">
+      <div class="card-label">Összes Profit</div>
+      <div class="card-value" id="totalProfit">—</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Megbízások</div>
+      <div class="card-value" id="totalTrades">—</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Fear & Greed</div>
+      <div class="card-value" id="fgValue">—</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Pozíció</div>
+      <div class="card-value" id="position">—</div>
+    </div>
+  </div>
+
+  <div class="grid2">
+
+    <!-- Indikátorok -->
+    <div class="panel">
+      <div class="panel-title">Indikátorok</div>
+      <div class="indicator-row">
+        <span class="ind-label">RSI (14)</span>
+        <span class="ind-value" id="rsi">—</span>
+      </div>
+      <div class="indicator-row">
+        <span class="ind-label">MACD</span>
+        <span class="ind-value" id="macd">—</span>
+      </div>
+      <div class="indicator-row">
+        <span class="ind-label">Volume arány</span>
+        <span class="ind-value" id="volume">—</span>
+      </div>
+      <div class="indicator-row">
+        <span class="ind-label">Fear & Greed</span>
+        <span class="ind-value" id="fgLabel">—</span>
+      </div>
+
+      <!-- Szavazás -->
+      <div style="margin-top: 20px;">
+        <div class="panel-title">Szavazás</div>
+        <div class="vote-labels">
+          <span style="color: var(--green)">Vétel: <b id="buyVotes">0</b>/6</span>
+          <span style="color: var(--red)">Eladás: <b id="sellVotes">0</b>/6</span>
+        </div>
+        <div class="vote-bar">
+          <div class="vote-buy"  id="buyBar"  style="width:50%"></div>
+          <div class="vote-sell" id="sellBar" style="width:50%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Statisztikák -->
+    <div class="panel">
+      <div class="panel-title">Teljesítmény</div>
+      <div class="indicator-row">
+        <span class="ind-label">Win Rate</span>
+        <span class="ind-value" id="statWinRate">—</span>
+      </div>
+      <div class="indicator-row">
+        <span class="ind-label">Átlag profit</span>
+        <span class="ind-value" id="statAvgProfit">—</span>
+      </div>
+      <div class="indicator-row">
+        <span class="ind-label">Összes profit</span>
+        <span class="ind-value" id="statTotalProfit">—</span>
+      </div>
+      <div class="indicator-row">
+        <span class="ind-label">Legjobb</span>
+        <span class="ind-value profit-pos" id="statBest">—</span>
+      </div>
+      <div class="indicator-row">
+        <span class="ind-label">Legrosszabb</span>
+        <span class="ind-value profit-neg" id="statWorst">—</span>
+      </div>
+      <div class="indicator-row">
+        <span class="ind-label">Lezárt pozíciók</span>
+        <span class="ind-value" id="statSells">—</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Megbízások tábla -->
+  <div class="panel">
+    <div class="panel-title">Legutóbbi megbízások</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Idő</th>
+          <th>Pár</th>
+          <th>Irány</th>
+          <th>Ár</th>
+          <th>Mennyiség</th>
+          <th>Profit</th>
+        </tr>
+      </thead>
+      <tbody id="tradesBody">
+        <tr><td colspan="6" style="color: var(--dim); text-align:center">Betöltés...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="refresh-note">// automatikus frissítés: 5 másodpercenként</div>
+
+</div>
+
+<script>
+  async function fetchLive() {
+    try {
+      const r = await fetch('/api/live');
+      const d = await r.json();
+
+      document.getElementById('price').textContent =
+        d.price ? d.price.toFixed(2) + ' $' : '—';
+      document.getElementById('rsi').textContent =
+        d.rsi ? d.rsi.toFixed(1) : '—';
+      document.getElementById('macd').textContent =
+        d.macd ? d.macd.toFixed(2) : '—';
+      document.getElementById('volume').textContent =
+        d.volume_ratio ? d.volume_ratio.toFixed(2) + 'x' : '—';
+      document.getElementById('fgValue').textContent =
+        d.fg_value + ' – ' + d.fg_label;
+      document.getElementById('fgLabel').textContent =
+        d.fg_value + ' (' + d.fg_label + ')';
+
+      // Pozíció
+      const posEl = document.getElementById('position');
+      if (d.in_position) {
+        posEl.textContent = 'NYITOTT';
+        posEl.className = 'card-value positive';
+      } else {
+        posEl.textContent = 'NINCS';
+        posEl.className = 'card-value';
+      }
+
+      // Szavazás sáv
+      document.getElementById('buyVotes').textContent  = d.buy_votes;
+      document.getElementById('sellVotes').textContent = d.sell_votes;
+      const total = 6;
+      document.getElementById('buyBar').style.width  =
+        (d.buy_votes  / total * 100) + '%';
+      document.getElementById('sellBar').style.width =
+        (d.sell_votes / total * 100) + '%';
+
+      // Státusz badge
+      document.getElementById('statusBadge').textContent = '● ' + d.status;
+
+    } catch(e) {
+      document.getElementById('statusBadge').textContent = '● KAPCSOLAT HIBA';
+    }
+  }
+
+  async function fetchStats() {
+    try {
+      const r = await fetch('/api/stats');
+      const d = await r.json();
+
+      document.getElementById('winRate').textContent =
+        (d.win_rate || 0).toFixed(1) + '%';
+      document.getElementById('totalProfit').textContent =
+        (d.total_profit >= 0 ? '+' : '') + (d.total_profit || 0).toFixed(2) + '%';
+      document.getElementById('totalTrades').textContent =
+        d.total_trades || 0;
+
+      document.getElementById('statWinRate').textContent =
+        (d.win_rate || 0).toFixed(1) + '%';
+      document.getElementById('statAvgProfit').textContent =
+        (d.avg_profit >= 0 ? '+' : '') + (d.avg_profit || 0).toFixed(2) + '%';
+      document.getElementById('statTotalProfit').textContent =
+        (d.total_profit >= 0 ? '+' : '') + (d.total_profit || 0).toFixed(2) + '%';
+      document.getElementById('statBest').textContent =
+        '+' + (d.best_trade || 0).toFixed(2) + '%';
+      document.getElementById('statWorst').textContent =
+        (d.worst_trade || 0).toFixed(2) + '%';
+      document.getElementById('statSells').textContent =
+        d.total_sells || 0;
+    } catch(e) {}
+  }
+
+  async function fetchTrades() {
+    try {
+      const r = await fetch('/api/trades');
+      const trades = await r.json();
+      const tbody = document.getElementById('tradesBody');
+
+      if (!trades.length) {
+        tbody.innerHTML =
+          '<tr><td colspan="6" style="color:var(--dim);text-align:center">Még nincs megbízás</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = trades.map(t => {
+        const sideClass = t.side === 'buy' ? 'buy-tag' : 'sell-tag';
+        const sideText  = t.side === 'buy' ? '▲ VÉTEL' : '▼ ELADÁS';
+        let profitHtml = '<span class="profit-na">—</span>';
+        if (t.profit_pct !== null && t.profit_pct !== undefined) {
+          const cls = t.profit_pct >= 0 ? 'profit-pos' : 'profit-neg';
+          const sign = t.profit_pct >= 0 ? '+' : '';
+          profitHtml = `<span class="${cls}">${sign}${t.profit_pct.toFixed(2)}%</span>`;
+        }
+        return `<tr>
+          <td>${t.timestamp}</td>
+          <td>${t.symbol}</td>
+          <td class="${sideClass}">${sideText}</td>
+          <td>${t.price.toFixed(2)}</td>
+          <td>${t.amount}</td>
+          <td>${profitHtml}</td>
+        </tr>`;
+      }).join('');
+    } catch(e) {}
+  }
+
+  function refreshAll() {
+    fetchLive();
+    fetchStats();
+    fetchTrades();
+  }
+
+  refreshAll();
+  setInterval(refreshAll, 5000);
+</script>
+</body>
+</html>
